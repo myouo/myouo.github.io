@@ -7,10 +7,10 @@ export const SITE: Site = {
   AUTHOR: "myouo",
 }
 
-// Work Page
-export const WORK: Page = {
-  TITLE: "Work",
-  DESCRIPTION: "Places I have worked.",
+// Journey Page
+export const JOURNEY: Page = {
+  TITLE: "Journey",
+  DESCRIPTION: "My open source contributions and independent projects.",
 }
 
 // Blog Page
@@ -38,8 +38,8 @@ export const LINKS: Links = [
     HREF: "/", 
   },
   { 
-    TEXT: "Work", 
-    HREF: "/work", 
+    TEXT: "Journey", 
+    HREF: "/journey", 
   },
   { 
     TEXT: "Blog", 
