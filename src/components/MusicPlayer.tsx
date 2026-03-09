@@ -15,6 +15,7 @@ const [state, setState] = createStore({
   isMuted: false,
   showPlaylist: false,
   showVolume: false,
+  autoplayAttempted: false,
 });
 
 // Singleton audio instance to prevent multiple players and persist playback
@@ -45,22 +46,40 @@ export default function MusicPlayer(props: Props) {
         if (props.tracks.length > 0) {
           globalAudio.src = props.tracks[state.currentTrackIndex];
         }
+      }
 
-        // 2-second delayed autoplay attempt
+      // Autoplay attempt with 2s delay
+      if (!state.autoplayAttempted) {
         setTimeout(() => {
           if (globalAudio && !state.isPlaying) {
             globalAudio.play()
-              .then(() => setState("isPlaying", true))
+              .then(() => {
+                setState("isPlaying", true);
+                setState("autoplayAttempted", true);
+              })
               .catch(() => {
-                console.log("Music autoplay blocked. User interaction required.");
+                console.log("Music autoplay blocked. Waiting for user interaction.");
+                // Set up a one-time listener to play on first interaction if autoplay was blocked
+                const playOnInteraction = () => {
+                  if (globalAudio && !state.isPlaying) {
+                    globalAudio.play().then(() => {
+                      setState("isPlaying", true);
+                      setState("autoplayAttempted", true);
+                    }).catch(console.error);
+                  }
+                  document.removeEventListener("click", playOnInteraction);
+                  document.removeEventListener("keydown", playOnInteraction);
+                  document.removeEventListener("touchstart", playOnInteraction);
+                };
+                document.addEventListener("click", playOnInteraction);
+                document.addEventListener("keydown", playOnInteraction);
+                document.addEventListener("touchstart", playOnInteraction);
               });
           }
         }, 2000);
-      } else {
-        // Sync state if audio exists (e.g. after page transition)
-        if (state.isPlaying && globalAudio.paused) {
-           globalAudio.play().catch(() => setState("isPlaying", false));
-        }
+      } else if (state.isPlaying && globalAudio?.paused) {
+        // Sync state if audio exists and should be playing
+        globalAudio.play().catch(() => setState("isPlaying", false));
       }
 
       // Close dropdowns on outside click
@@ -86,6 +105,7 @@ export default function MusicPlayer(props: Props) {
     } else {
       globalAudio.play().then(() => {
         setState("isPlaying", true);
+        setState("autoplayAttempted", true);
       }).catch(console.error);
     }
   };
@@ -114,6 +134,7 @@ export default function MusicPlayer(props: Props) {
   const selectTrack = (index: number) => {
     setState("currentTrackIndex", index);
     setState("isPlaying", true);
+    setState("autoplayAttempted", true);
     setState("showPlaylist", false);
   };
 
