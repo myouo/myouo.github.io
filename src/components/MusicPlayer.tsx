@@ -133,10 +133,10 @@ export default function MusicPlayer(props: Props) {
   });
 
   return (
-    <div class="music-player-container flex items-center gap-1 relative">
+    <div class="music-player-container flex items-center gap-0.5 sm:gap-1 relative">
       {/* Playlist Dropdown */}
       <Show when={state.showPlaylist}>
-        <div class="absolute top-full right-0 mt-3 w-64 max-h-72 overflow-hidden flex flex-col bg-white/90 dark:bg-black/90 border border-black/10 dark:border-white/20 rounded-xl shadow-2xl z-[60] backdrop-blur-md animate-fadeIn">
+        <div class="absolute top-full right-0 mt-3 w-56 sm:w-64 max-h-72 overflow-hidden flex flex-col bg-white/90 dark:bg-black/90 border border-black/10 dark:border-white/20 rounded-xl shadow-2xl z-[60] backdrop-blur-md animate-fadeIn">
           <div class="p-3 border-b border-black/5 dark:border-white/10 flex items-center justify-between">
             <span class="text-xs font-bold uppercase tracking-wider text-black/50 dark:text-white/50">Playlist</span>
             <span class="text-[10px] px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-black/40 dark:text-white/40">{localTracks().length} Songs</span>
@@ -188,7 +188,7 @@ export default function MusicPlayer(props: Props) {
             step="0.01" 
             value={state.volume} 
             onInput={handleVolumeChange}
-            class="w-32 h-1 bg-black/10 dark:bg-white/20 rounded-lg appearance-none cursor-pointer accent-black dark:accent-white"
+            class="w-24 sm:w-32 h-1 bg-black/10 dark:bg-white/20 rounded-lg appearance-none cursor-pointer accent-black dark:accent-white"
           />
           <span class="text-[10px] font-mono w-6 opacity-50">{Math.round(state.volume * 100)}%</span>
         </div>
@@ -202,7 +202,7 @@ export default function MusicPlayer(props: Props) {
           setState("showVolume", false);
         }}
         class={cn(
-          "size-9 rounded-full p-2.5 items-center justify-center hidden sm:flex",
+          "size-8 sm:size-9 rounded-full p-2 sm:p-2.5 items-center justify-center flex",
           "bg-transparent hover:bg-black/5 dark:hover:bg-white/20",
           "stroke-current hover:stroke-black hover:dark:stroke-white",
           "border border-black/10 dark:border-white/25",
@@ -220,7 +220,7 @@ export default function MusicPlayer(props: Props) {
       <button
         onClick={nextMode}
         class={cn(
-          "size-9 rounded-full p-2.5 items-center justify-center",
+          "size-8 sm:size-9 rounded-full p-2 sm:p-2.5 items-center justify-center flex",
           "bg-transparent hover:bg-black/5 dark:hover:bg-white/20",
           "stroke-current hover:stroke-black hover:dark:stroke-white",
           "border border-black/10 dark:border-white/25",
@@ -258,7 +258,7 @@ export default function MusicPlayer(props: Props) {
       <button
         onClick={togglePlay}
         class={cn(
-          "size-9 rounded-full p-2.5 items-center justify-center relative overflow-hidden",
+          "size-8 sm:size-9 rounded-full p-2 sm:p-2.5 items-center justify-center relative overflow-hidden flex",
           "bg-transparent hover:bg-black/5 dark:hover:bg-white/20",
           "stroke-current hover:stroke-black hover:dark:stroke-white",
           "border border-black/10 dark:border-white/25",
@@ -287,7 +287,7 @@ export default function MusicPlayer(props: Props) {
           setState("showPlaylist", false);
         }}
         class={cn(
-          "size-9 rounded-full p-2.5 items-center justify-center hidden sm:flex",
+          "size-8 sm:size-9 rounded-full p-2 sm:p-2.5 items-center justify-center flex",
           "bg-transparent hover:bg-black/5 dark:hover:bg-white/20",
           "stroke-current hover:stroke-black hover:dark:stroke-white",
           "border border-black/10 dark:border-white/25",
