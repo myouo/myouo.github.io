@@ -46,12 +46,18 @@ export default function MusicPlayer(props: Props) {
           globalAudio.src = props.tracks[state.currentTrackIndex];
         }
 
-        // Try to autoplay
-        if (state.isPlaying) {
-          globalAudio.play().catch(() => setState("isPlaying", false));
-        }
+        // 2-second delayed autoplay attempt
+        setTimeout(() => {
+          if (globalAudio && !state.isPlaying) {
+            globalAudio.play()
+              .then(() => setState("isPlaying", true))
+              .catch(() => {
+                console.log("Music autoplay blocked. User interaction required.");
+              });
+          }
+        }, 2000);
       } else {
-        // Sync state if audio exists
+        // Sync state if audio exists (e.g. after page transition)
         if (state.isPlaying && globalAudio.paused) {
            globalAudio.play().catch(() => setState("isPlaying", false));
         }
