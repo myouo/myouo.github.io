@@ -26,11 +26,13 @@ type Props = {
 };
 
 export default function MusicPlayer(props: Props) {
-  const [localTracks, setLocalTracks] = createSignal<string[]>([]);
+  const [localTracks, setLocalTracks] = createSignal<string[]>(props.tracks);
+
+  createEffect(() => {
+    setLocalTracks(props.tracks);
+  });
 
   onMount(() => {
-    setLocalTracks(props.tracks);
-    
     if (typeof window !== "undefined") {
       if (!globalAudio) {
         globalAudio = new Audio();
@@ -48,35 +50,42 @@ export default function MusicPlayer(props: Props) {
         }
       }
 
-      // Autoplay attempt with 2s delay
+      // Autoplay attempt: try immediately, then on interaction
+      const attemptPlay = () => {
+        if (globalAudio && !state.isPlaying) {
+          globalAudio.play()
+            .then(() => {
+              setState("isPlaying", true);
+              setState("autoplayAttempted", true);
+              cleanupListeners();
+            })
+            .catch(() => {
+              console.log("Music autoplay blocked. Waiting for user interaction.");
+            });
+        }
+      };
+
+      const cleanupListeners = () => {
+        document.removeEventListener("click", attemptPlay);
+        document.removeEventListener("keydown", attemptPlay);
+        document.removeEventListener("touchstart", attemptPlay);
+        document.removeEventListener("scroll", attemptPlay);
+        window.removeEventListener("touchstart", attemptPlay);
+      };
+
       if (!state.autoplayAttempted) {
-        setTimeout(() => {
-          if (globalAudio && !state.isPlaying) {
-            globalAudio.play()
-              .then(() => {
-                setState("isPlaying", true);
-                setState("autoplayAttempted", true);
-              })
-              .catch(() => {
-                console.log("Music autoplay blocked. Waiting for user interaction.");
-                // Set up a one-time listener to play on first interaction if autoplay was blocked
-                const playOnInteraction = () => {
-                  if (globalAudio && !state.isPlaying) {
-                    globalAudio.play().then(() => {
-                      setState("isPlaying", true);
-                      setState("autoplayAttempted", true);
-                    }).catch(console.error);
-                  }
-                  document.removeEventListener("click", playOnInteraction);
-                  document.removeEventListener("keydown", playOnInteraction);
-                  document.removeEventListener("touchstart", playOnInteraction);
-                };
-                document.addEventListener("click", playOnInteraction);
-                document.addEventListener("keydown", playOnInteraction);
-                document.addEventListener("touchstart", playOnInteraction);
-              });
-          }
-        }, 2000);
+        // Try immediately
+        attemptPlay();
+        
+        // Also try after a short delay
+        setTimeout(attemptPlay, 1000);
+        
+        // Setup interaction listeners on both document and window for maximum coverage
+        document.addEventListener("click", attemptPlay);
+        document.addEventListener("keydown", attemptPlay);
+        document.addEventListener("touchstart", attemptPlay);
+        document.addEventListener("scroll", attemptPlay);
+        window.addEventListener("touchstart", attemptPlay);
       } else if (state.isPlaying && globalAudio?.paused) {
         // Sync state if audio exists and should be playing
         globalAudio.play().catch(() => setState("isPlaying", false));
@@ -91,7 +100,10 @@ export default function MusicPlayer(props: Props) {
         }
       };
       document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
+      return () => {
+        document.removeEventListener('click', handleClickOutside);
+        cleanupListeners();
+      };
     }
   });
 
