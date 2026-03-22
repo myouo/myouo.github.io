@@ -10,8 +10,25 @@ const { entry } = Astro.props
 const { collection, data, body } = entry
 const { title, summary, date } = data
 
-const demoUrl = collection === "projects" ? data.demoUrl : null
-const repoUrl = collection === "projects" ? data.repoUrl : null
+function normalizeExternalUrl(value: unknown): string | null {
+  if (typeof value !== "string") return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+
+  try {
+    const parsed = new URL(trimmed)
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return parsed.toString()
+    }
+  } catch {
+    return null
+  }
+
+  return null
+}
+
+const demoUrl = collection === "projects" ? normalizeExternalUrl(data.demoUrl) : null
+const repoUrl = collection === "projects" ? normalizeExternalUrl(data.repoUrl) : null
 ---
 
 <div>
