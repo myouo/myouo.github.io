@@ -3,6 +3,7 @@ import { getCollection } from "astro:content"
 import PageLayout from "@layouts/PageLayout.astro"
 import TopLayout from "@layouts/TopLayout.astro"
 import BottomLayout from "@layouts/BottomLayout.astro"
+import { getWorkEntryAnchor, renderEntryRichText } from "@lib/rich-text"
 import { JOURNEY } from "@consts"
 
 const collection = await getCollection("work")
@@ -11,8 +12,8 @@ collection.sort((a, b) => new Date(b.data.dateStart).getTime() - new Date(a.data
 
 const work = await Promise.all(
   collection.map(async (item) => {
-    const { Content } = await item.render()
-    return { ...item, Content }
+    const { html } = await renderEntryRichText(item)
+    return { ...item, html }
   })
 )
 
@@ -38,7 +39,7 @@ function formatWorkDate(input: Date | string) {
     <ul>
       { 
         work.map((entry) => (
-          <li class="animate border-b border-black/10 dark:border-white/25 mt-4 py-8 first-of-type:mt-0 first-of-type:pt-0 last-of-type:border-none">
+          <li id={getWorkEntryAnchor(entry)} class="animate border-b border-black/10 dark:border-white/25 mt-4 py-8 first-of-type:mt-0 first-of-type:pt-0 last-of-type:border-none">
             <div class="text-sm uppercase mb-4">
               {formatWorkDate(entry.data.dateStart)} - {formatWorkDate(entry.data.dateEnd)}
             </div>
@@ -48,9 +49,7 @@ function formatWorkDate(input: Date | string) {
             <div class="text-sm font-semibold">
               {entry.data.role}
             </div>
-            <article class="prose dark:prose-invert">
-              <entry.Content />
-            </article>
+            <article class="prose dark:prose-invert" set:html={entry.html} />
           </li>
         ))
       }

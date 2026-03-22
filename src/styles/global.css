@@ -1,4 +1,5 @@
 @import "@fontsource/geist-sans";
+@import "katex/dist/katex.min.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -112,6 +113,230 @@ article img {
   padding-bottom: 20px;
   display: block;
   margin: 0 auto;
+}
+
+article mark {
+  background: color-mix(in srgb, #f3cf65 72%, transparent);
+  border-radius: 0.2rem;
+  color: inherit;
+  padding: 0 0.18rem;
+}
+
+article .obsidian-unresolved {
+  border-bottom: 1px dashed currentColor;
+  opacity: 0.65;
+}
+
+article .obsidian-block-anchor {
+  display: inline-block;
+  height: 0;
+  width: 0;
+}
+
+article .obsidian-callout {
+  --callout-accent: #2563eb;
+  --callout-bg: rgba(37, 99, 235, 0.08);
+  --callout-border: rgba(37, 99, 235, 0.24);
+  background: var(--callout-bg);
+  border: 1px solid var(--callout-border);
+  border-left: 4px solid var(--callout-accent);
+  border-radius: 0.9rem;
+  margin: 1.5rem 0;
+  overflow: hidden;
+}
+
+article .obsidian-callout[data-callout="note"],
+article .obsidian-callout[data-callout="info"] {
+  --callout-accent: #2563eb;
+  --callout-bg: rgba(37, 99, 235, 0.08);
+  --callout-border: rgba(37, 99, 235, 0.24);
+}
+
+article .obsidian-callout[data-callout="tip"],
+article .obsidian-callout[data-callout="success"] {
+  --callout-accent: #059669;
+  --callout-bg: rgba(5, 150, 105, 0.08);
+  --callout-border: rgba(5, 150, 105, 0.24);
+}
+
+article .obsidian-callout[data-callout="warning"],
+article .obsidian-callout[data-callout="caution"] {
+  --callout-accent: #d97706;
+  --callout-bg: rgba(217, 119, 6, 0.1);
+  --callout-border: rgba(217, 119, 6, 0.24);
+}
+
+article .obsidian-callout[data-callout="danger"],
+article .obsidian-callout[data-callout="error"],
+article .obsidian-callout[data-callout="bug"] {
+  --callout-accent: #dc2626;
+  --callout-bg: rgba(220, 38, 38, 0.08);
+  --callout-border: rgba(220, 38, 38, 0.24);
+}
+
+article .obsidian-callout[data-callout="quote"] {
+  --callout-accent: #7c3aed;
+  --callout-bg: rgba(124, 58, 237, 0.08);
+  --callout-border: rgba(124, 58, 237, 0.24);
+}
+
+article .obsidian-callout-title,
+article .obsidian-callout > summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 0.7rem;
+  list-style: none;
+  padding: 0.9rem 1rem 0.85rem;
+}
+
+article .obsidian-callout > summary::-webkit-details-marker {
+  display: none;
+}
+
+article .obsidian-callout-icon {
+  background: var(--callout-accent);
+  border-radius: 999px;
+  display: inline-block;
+  flex: none;
+  height: 0.7rem;
+  width: 0.7rem;
+}
+
+article .obsidian-callout-label {
+  color: rgb(15 23 42 / 0.9);
+  font-family: "Geist Sans", sans-serif;
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.dark article .obsidian-callout-label {
+  color: rgb(248 250 252 / 0.92);
+}
+
+article .obsidian-callout-content {
+  padding: 0 1rem 1rem;
+}
+
+article .obsidian-callout-content > :first-child {
+  margin-top: 0;
+}
+
+article .obsidian-callout-content > :last-child {
+  margin-bottom: 0;
+}
+
+article .obsidian-embed {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.03), rgba(0, 0, 0, 0.01));
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 1rem;
+  margin: 1.5rem 0;
+  overflow: hidden;
+}
+
+.dark article .obsidian-embed {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+article .obsidian-embed figcaption {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  font-family: "Geist Sans", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0;
+  padding: 0.9rem 1rem;
+}
+
+.dark article .obsidian-embed figcaption {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+article .obsidian-embed figcaption a {
+  text-decoration: none;
+}
+
+article .obsidian-embed-content {
+  padding: 0.25rem 1rem 1rem;
+}
+
+article .obsidian-embed-content > :last-child {
+  margin-bottom: 0;
+}
+
+article .obsidian-embed-media {
+  border-radius: 0.8rem;
+  display: block;
+  margin: 1.5rem auto;
+  max-width: 100%;
+}
+
+article .obsidian-embed-pdf {
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  min-height: 480px;
+  width: 100%;
+}
+
+article .obsidian-math-inline {
+  display: inline-block;
+  font-size: 0.98em;
+}
+
+article .obsidian-math-block {
+  display: block;
+  margin: 1.25rem 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+article .obsidian-mermaid {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 1rem;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  padding: 1rem;
+}
+
+.dark article .obsidian-mermaid {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+article .obsidian-mermaid svg {
+  display: block;
+  height: auto;
+  margin: 0 auto;
+  max-width: 100%;
+}
+
+article .obsidian-mermaid-fallback {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.bbcode-align-left {
+  text-align: left;
+}
+
+.bbcode-align-center {
+  text-align: center;
+}
+
+.bbcode-align-right {
+  text-align: right;
+}
+
+.bbcode-spoiler {
+  background: currentColor;
+  border-radius: 0.25rem;
+  color: transparent;
+  padding: 0 0.25rem;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.bbcode-spoiler:hover {
+  background: transparent;
+  color: inherit;
 }
 
 /**

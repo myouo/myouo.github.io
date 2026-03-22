@@ -4,6 +4,7 @@ import PageLayout from "@layouts/PageLayout.astro"
 import TopLayout from "@layouts/TopLayout.astro"
 import BottomLayout from "@layouts/BottomLayout.astro"
 import { formatDate } from "@lib/utils"
+import { renderEntryRichText } from "@lib/rich-text"
 import { SITE } from "@consts"
 
 // Create the static pages for legal docs
@@ -19,7 +20,7 @@ export async function getStaticPaths() {
 type Props = CollectionEntry<"legal">;
 const doc = Astro.props
 const { title, date } = doc.data
-const { Content } = await doc.render();
+const { html } = await renderEntryRichText(doc)
 
 ---
 
@@ -35,8 +36,6 @@ const { Content } = await doc.render();
     </div>
   </TopLayout>
   <BottomLayout>
-    <article class="animate">
-      <Content/>
-    </article>
+    <article class="animate" set:html={html} />
   </BottomLayout>
 </PageLayout>
