@@ -354,7 +354,7 @@ function relativeRepoPath(targetPath) {
 }
 
 function dirtyPaths() {
-  const raw = runGit(["status", "--porcelain"])
+  const raw = runGit(["status", "--porcelain", "--untracked-files=all"])
   if (!raw) return []
 
   return raw.split("\n").map((line) => {

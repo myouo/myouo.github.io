@@ -72,7 +72,7 @@ function parseDirtyPath(line) {
 
 function getRepoState() {
   const branch = runGit(["rev-parse", "--abbrev-ref", "HEAD"])
-  const dirty = runGit(["status", "--porcelain"])
+  const dirty = runGit(["status", "--porcelain", "--untracked-files=all"])
   return {
     branch,
     dirty: Boolean(dirty),
