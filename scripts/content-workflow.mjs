@@ -198,7 +198,12 @@ function serializeFrontmatterValue(value) {
   if (typeof value === "boolean") return value ? "true" : "false"
   if (typeof value === "number") return String(value)
   if (value == null) return "\"\""
-  return quoteString(String(value))
+  const str = String(value)
+  // Safe bare YAML scalar: only word chars and hyphens, not a YAML keyword
+  if (/^[a-zA-Z_][a-zA-Z0-9_-]*$/.test(str) && !["true", "false", "null", "yes", "no", "on", "off"].includes(str)) {
+    return str
+  }
+  return quoteString(str)
 }
 
 function renderFrontmatter(data, preferredOrder = []) {
