@@ -52,6 +52,9 @@ Replace npm with your package manager of choice. `npm`, `pnpm`, `yarn`, `bun`, e
 | `npm run dev:network`     | Starts dev server on local network               |
 | `npm run sync`            | Generates TypeScript types for all Astro modules.|
 | `npm run build`           | Build your production site to `./dist/`          |
+| `npm run content -- ...`  | Manage blog/project entries and PR review flow   |
+| `npm run studio:api`      | Start the local Studio API for content management |
+| `npm run studio:dev`      | Start the local Studio UI and API together       |
 | `npm run preview`         | Preview your build locally, before deploying     |
 | `npm run preview:network` | Starts preview server on local network           |
 | `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
@@ -87,3 +90,14 @@ Added subtle dark mode star and meteor animations.
 
 Removed eslint config
 
+## Editorial Workflow
+
+This repo now includes a local content workflow designed for GitHub Pages:
+
+- Create drafts locally with `npm run content -- new ...`
+- Manage visibility with `status: draft | published | archived`
+- Delete entries locally or through review branches
+- Submit content and status changes through pull requests with `npm run content -- submit-review ...`
+- Use `/studio` locally for a visual management UI via `npm run studio:dev`
+
+See [`docs/content-workflow.md`](docs/content-workflow.md) for the full workflow.

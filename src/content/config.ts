@@ -1,4 +1,5 @@
 import { defineCollection, z } from "astro:content"
+import { CONTENT_STATUSES } from "@lib/content"
 
 const work = defineCollection({
   type: "content",
@@ -17,6 +18,7 @@ const blog = defineCollection({
     summary: z.string(),
     date: z.coerce.date(),
     tags: z.array(z.string()),
+    status: z.enum(CONTENT_STATUSES).optional(),
     draft: z.boolean().optional(),
   }),
 })
@@ -28,6 +30,7 @@ const projects = defineCollection({
     summary: z.string(),
     date: z.coerce.date(),
     tags: z.array(z.string()),
+    status: z.enum(CONTENT_STATUSES).optional(),
     draft: z.boolean().optional(),
     demoUrl: z.string().optional(),
     repoUrl: z.string().optional(),

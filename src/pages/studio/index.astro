@@ -1,0 +1,24 @@
+---
+import PageLayout from "@layouts/PageLayout.astro"
+import TopLayout from "@layouts/TopLayout.astro"
+import BottomLayout from "@layouts/BottomLayout.astro"
+import StudioApp from "@components/StudioApp"
+---
+
+<PageLayout title="Studio" description="Local content studio for managing posts, projects, and review flow." footerSize="xl">
+  <TopLayout size="xl">
+    <div class="animate">
+      <h1 class="mt-2 text-3xl font-semibold text-black dark:text-white">
+        Studio
+      </h1>
+      <div class="mt-1 max-w-3xl">
+        Local-first editorial tooling for content creation, status management, and PR review.
+      </div>
+    </div>
+  </TopLayout>
+  <BottomLayout size="xl">
+    <div class="animate">
+      <StudioApp client:load />
+    </div>
+  </BottomLayout>
+</PageLayout>

@@ -5,9 +5,9 @@ import TopLayout from "@layouts/TopLayout.astro";
 import BottomLayout from "@layouts/BottomLayout.astro";
 import SearchCollection from "@components/SearchCollection";
 import { BLOG } from "@consts";
+import { filterPublishedEntries } from "@lib/content";
 
-const posts = (await getCollection("blog"))
-  .filter((post) => !post.data.draft)
+const posts = filterPublishedEntries(await getCollection("blog"))
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 
 const tags = [...new Set(posts.flatMap((post) => post.data.tags))].sort(
@@ -18,8 +18,8 @@ const estimated_initial_size =
   28 + posts.length * 158 + (posts.length - 1) * 12;
 ---
 
-<PageLayout title={BLOG.TITLE} description={BLOG.DESCRIPTION}>
-  <TopLayout>
+<PageLayout title={BLOG.TITLE} description={BLOG.DESCRIPTION} footerSize="xl">
+  <TopLayout size="xl">
     <div class="animate">
       <h1 class="text-3xl font-semibold text-black dark:text-white mt-2">
         {BLOG.TITLE}
@@ -29,7 +29,7 @@ const estimated_initial_size =
       </div>
     </div>
   </TopLayout>
-  <BottomLayout>
+  <BottomLayout size="xl">
     <div
       id="search-collection-wrapper"
       class="animate"

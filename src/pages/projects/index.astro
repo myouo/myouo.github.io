@@ -5,10 +5,9 @@ import TopLayout from "@layouts/TopLayout.astro";
 import BottomLayout from "@layouts/BottomLayout.astro";
 import SearchCollection from "@components/SearchCollection";
 import { PROJECTS } from "@consts";
-import type { CollectionEntry } from "astro:content";
+import { filterPublishedEntries } from "@lib/content";
 
-const projects = (await getCollection("projects"))
-  .filter((project) => !project.data.draft)
+const projects = filterPublishedEntries(await getCollection("projects"))
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 
 const tags = [
@@ -19,8 +18,8 @@ const estimated_initial_size =
   28 + projects.length * 158 + (projects.length - 1) * 12;
 ---
 
-<PageLayout title={PROJECTS.TITLE} description={PROJECTS.DESCRIPTION}>
-  <TopLayout>
+<PageLayout title={PROJECTS.TITLE} description={PROJECTS.DESCRIPTION} footerSize="xl">
+  <TopLayout size="xl">
     <div class="animate">
       <h1 class="text-3xl font-semibold text-black dark:text-white mt-2">
         {PROJECTS.TITLE}
@@ -30,7 +29,7 @@ const estimated_initial_size =
       </div>
     </div>
   </TopLayout>
-  <BottomLayout>
+  <BottomLayout size="xl">
     <div
       id="search-collection-wrapper"
       class="animate"
