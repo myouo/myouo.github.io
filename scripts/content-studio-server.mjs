@@ -16,7 +16,7 @@ function sendJson(response, status, payload) {
   response.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
   })
   response.end(JSON.stringify(payload))
@@ -130,6 +130,21 @@ function buildCliArgsFromReview(collection, slug, body) {
   return args
 }
 
+function buildCliArgsFromUpdate(collection, slug, body) {
+  const args = ["update-entry", collection, slug]
+
+  if (body.title !== undefined) args.push("--title", String(body.title))
+  if (body.summary !== undefined) args.push("--summary", String(body.summary))
+  if (body.date !== undefined) args.push("--date", String(body.date))
+  if (body.tags !== undefined) args.push("--tags", Array.isArray(body.tags) ? body.tags.join(",") : String(body.tags))
+  if (body.body !== undefined) args.push("--body", String(body.body))
+  if (body.status !== undefined) args.push("--status", String(body.status))
+  if (body.demoUrl !== undefined) args.push("--demo-url", String(body.demoUrl))
+  if (body.repoUrl !== undefined) args.push("--repo-url", String(body.repoUrl))
+
+  return args
+}
+
 const server = http.createServer(async (request, response) => {
   if (!request.url) {
     sendError(response, 400, "missing request URL")
@@ -139,7 +154,7 @@ const server = http.createServer(async (request, response) => {
   if (request.method === "OPTIONS") {
     response.writeHead(204, {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
+      "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
     })
     response.end()
@@ -174,6 +189,21 @@ const server = http.createServer(async (request, response) => {
       const body = await readJsonBody(request)
       const data = runWorkflow(buildCliArgsFromCreate(body))
       sendJson(response, 201, { ok: true, data })
+      return
+    }
+
+    if (pathParts.length === 3 && pathParts[0] === "entries" && request.method === "GET") {
+      const [, collection, slug] = pathParts
+      const data = runWorkflow(["get-entry", collection, decodeURIComponent(slug)])
+      sendJson(response, 200, { ok: true, data })
+      return
+    }
+
+    if (pathParts.length === 3 && pathParts[0] === "entries" && request.method === "PUT") {
+      const [, collection, slug] = pathParts
+      const body = await readJsonBody(request)
+      const data = runWorkflow(buildCliArgsFromUpdate(collection, decodeURIComponent(slug), body))
+      sendJson(response, 200, { ok: true, data })
       return
     }
 

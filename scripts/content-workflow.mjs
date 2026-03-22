@@ -27,6 +27,8 @@ function printHelp() {
   console.log(`Usage:
   npm run content -- new <blog|projects> --title "My Title" [--summary "Short summary"] [--tags "Tag A,Tag B"] [--slug "my-title"] [--status draft]
   npm run content -- list [blog|projects|all] [--status published]
+  npm run content -- get-entry <blog|projects> <slug>
+  npm run content -- update-entry <blog|projects> <slug> [--title "New Title"] [--summary "New summary"] [--date 2026-01-01] [--tags "Tag A,Tag B"] [--body "..."] [--status published]
   npm run content -- set-status <blog|projects> <slug> <draft|published|archived>
   npm run content -- delete <blog|projects> <slug>
   npm run content -- submit-review <blog|projects> <slug> [--status published] [--push] [--create-pr] [--delete]
@@ -190,6 +192,44 @@ function parseFrontmatter(text) {
   }
 
   return data
+}
+
+function serializeFrontmatterValue(value) {
+  if (typeof value === "boolean") return value ? "true" : "false"
+  if (typeof value === "number") return String(value)
+  if (value == null) return "\"\""
+  return quoteString(String(value))
+}
+
+function renderFrontmatter(data, preferredOrder = []) {
+  const remainingEntries = new Map(Object.entries(data).filter(([, value]) => value !== undefined))
+  const lines = ["---"]
+
+  function pushValue(key, value) {
+    if (Array.isArray(value)) {
+      lines.push(`${key}:`)
+      for (const item of value) {
+        lines.push(`- ${serializeFrontmatterValue(item)}`)
+      }
+      return
+    }
+
+    lines.push(`${key}: ${serializeFrontmatterValue(value)}`)
+  }
+
+  for (const key of preferredOrder) {
+    if (!remainingEntries.has(key)) continue
+    const value = remainingEntries.get(key)
+    remainingEntries.delete(key)
+    pushValue(key, value)
+  }
+
+  for (const [key, value] of remainingEntries) {
+    pushValue(key, value)
+  }
+
+  lines.push("---")
+  return `${lines.join("\n")}\n`
 }
 
 function upsertFrontmatterLine(text, key, renderedValue, afterKeys = []) {
@@ -504,6 +544,96 @@ async function commandList(collectionOrAll, options) {
   return rows
 }
 
+async function commandGetEntry(collection, slug, options = {}) {
+  const normalizedCollection = normalizeCollection(collection)
+  const entry = await findEntry(normalizedCollection, slug)
+  const contents = await readText(entry.filePath)
+  const { fullMatch } = extractFrontmatter(contents)
+  const body = contents.slice(fullMatch.length).replace(/^\n/, "")
+  const status = String(entry.frontmatter.status ?? (entry.frontmatter.draft ? "draft" : "published"))
+
+  const result = {
+    collection: normalizedCollection,
+    slug: entry.slug,
+    status,
+    date: String(entry.frontmatter.date ?? ""),
+    title: String(entry.frontmatter.title ?? ""),
+    summary: String(entry.frontmatter.summary ?? ""),
+    tags: Array.isArray(entry.frontmatter.tags) ? entry.frontmatter.tags.map((tag) => String(tag)) : [],
+    filePath: relativeRepoPath(entry.filePath),
+    repoUrl: normalizedCollection === "projects" ? String(entry.frontmatter.repoUrl ?? "") : "",
+    demoUrl: normalizedCollection === "projects" ? String(entry.frontmatter.demoUrl ?? "") : "",
+    body,
+  }
+
+  if (!wantsJson(options)) {
+    console.log(`${result.collection}/${result.slug}`)
+  }
+
+  return result
+}
+
+async function commandUpdateEntry(collection, slug, options = {}) {
+  const normalizedCollection = normalizeCollection(collection)
+  const entry = await findEntry(normalizedCollection, slug)
+  const contents = await readText(entry.filePath)
+  const currentFrontmatter = parseFrontmatter(contents)
+  const { fullMatch } = extractFrontmatter(contents)
+  const currentBody = contents.slice(fullMatch.length).replace(/^\n/, "")
+  const currentStatus = String(currentFrontmatter.status ?? (currentFrontmatter.draft ? "draft" : "published"))
+  const nextStatus = options.status ? normalizeStatus(String(options.status)) : currentStatus
+
+  const nextFrontmatter = {
+    ...currentFrontmatter,
+    title: String(options.title ?? currentFrontmatter.title ?? ""),
+    summary: String(options.summary ?? currentFrontmatter.summary ?? ""),
+    date: String(options.date ?? currentFrontmatter.date ?? currentIsoDate()),
+    status: nextStatus,
+    draft: nextStatus === "draft",
+    tags: options.tags !== undefined
+      ? splitTags(Array.isArray(options.tags) ? options.tags.join(",") : String(options.tags))
+      : (Array.isArray(currentFrontmatter.tags) ? currentFrontmatter.tags.map((tag) => String(tag)) : []),
+  }
+
+  if (normalizedCollection === "projects") {
+    const nextRepoUrl = options["repo-url"] !== undefined
+      ? String(options["repo-url"] ?? "").trim()
+      : String(currentFrontmatter.repoUrl ?? "").trim()
+    const nextDemoUrl = options["demo-url"] !== undefined
+      ? String(options["demo-url"] ?? "").trim()
+      : String(currentFrontmatter.demoUrl ?? "").trim()
+
+    if (nextRepoUrl) {
+      nextFrontmatter.repoUrl = nextRepoUrl
+    } else {
+      delete nextFrontmatter.repoUrl
+    }
+
+    if (nextDemoUrl) {
+      nextFrontmatter.demoUrl = nextDemoUrl
+    } else {
+      delete nextFrontmatter.demoUrl
+    }
+  } else {
+    delete nextFrontmatter.repoUrl
+    delete nextFrontmatter.demoUrl
+  }
+
+  const nextBody = String(options.body ?? currentBody).replace(/\r\n/g, "\n").replace(/^\n+/, "")
+  const nextText = `${renderFrontmatter(
+    nextFrontmatter,
+    normalizedCollection === "projects"
+      ? ["title", "summary", "date", "status", "draft", "tags", "demoUrl", "repoUrl"]
+      : ["title", "summary", "date", "status", "draft", "tags"],
+  )}\n${nextBody.endsWith("\n") ? nextBody : `${nextBody}\n`}`
+
+  if (nextText !== contents) {
+    await writeText(entry.filePath, nextText)
+  }
+
+  return commandGetEntry(normalizedCollection, slug, options)
+}
+
 async function commandSetStatus(collection, slug, status, options = {}) {
   const normalizedCollection = normalizeCollection(collection)
   const normalizedStatus = normalizeStatus(status)
@@ -693,6 +823,12 @@ async function main() {
       break
     case "list":
       result = await commandList(firstArg, options)
+      break
+    case "get-entry":
+      result = await commandGetEntry(firstArg, secondArg, options)
+      break
+    case "update-entry":
+      result = await commandUpdateEntry(firstArg, secondArg, options)
       break
     case "set-status":
       result = await commandSetStatus(firstArg, secondArg, thirdArg, options)

@@ -201,6 +201,11 @@ export default function StudioApp() {
     }
   }
 
+  function editorHref(entry: StudioEntry) {
+    const kind = entry.collection === "projects" ? "project" : "blog"
+    return `/studio/edit/${kind}/${encodeURIComponent(entry.slug)}`
+  }
+
   async function submitReview(entry: StudioEntry) {
     setBusySlug(entry.slug)
     setMessage("")
@@ -527,6 +532,11 @@ export default function StudioApp() {
                         <button type="button" class={secondaryButtonClass} disabled={busySlug() === entry.slug || entry.status === "archived"} onClick={() => void updateStatus(entry, "archived")}>
                           Archive
                         </button>
+                        <Show when={entry.status === "published"}>
+                          <a href={editorHref(entry)} class={secondaryButtonClass}>
+                            Edit Content
+                          </a>
+                        </Show>
                         <button type="button" class={primaryButtonClass} disabled={busySlug() === entry.slug} onClick={() => void submitReview(entry)}>
                           {busySlug() === entry.slug ? "Working..." : "Prepare Review"}
                         </button>

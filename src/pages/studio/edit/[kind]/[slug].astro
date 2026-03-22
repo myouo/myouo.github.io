@@ -1,0 +1,49 @@
+---
+import { getCollection } from "astro:content"
+import PageLayout from "@layouts/PageLayout.astro"
+import TopLayout from "@layouts/TopLayout.astro"
+import BottomLayout from "@layouts/BottomLayout.astro"
+import StudioEntryEditor from "@components/StudioEntryEditor"
+
+export async function getStaticPaths() {
+  const blogEntries = await getCollection("blog")
+  const projectEntries = await getCollection("projects")
+
+  return [
+    ...blogEntries.map((entry) => ({
+      params: { kind: "blog", slug: entry.slug },
+      props: { collection: "blog", slug: entry.slug },
+    })),
+    ...projectEntries.map((entry) => ({
+      params: { kind: "project", slug: entry.slug },
+      props: { collection: "projects", slug: entry.slug },
+    })),
+  ]
+}
+
+type Props = {
+  collection: "blog" | "projects"
+  slug: string
+}
+
+const { collection, slug } = Astro.props
+const label = collection === "projects" ? "Project" : "Blog"
+---
+
+<PageLayout title={`Edit ${label}`} description={`Edit ${collection}/${slug} in the local Studio.`} footerSize="xl">
+  <TopLayout size="xl">
+    <div class="animate">
+      <h1 class="mt-2 text-3xl font-semibold text-black dark:text-white">
+        Edit {label}
+      </h1>
+      <div class="mt-1 max-w-3xl">
+        {collection}/{slug}
+      </div>
+    </div>
+  </TopLayout>
+  <BottomLayout size="xl">
+    <div class="animate">
+      <StudioEntryEditor collection={collection} slug={slug} backHref="/studio" client:load />
+    </div>
+  </BottomLayout>
+</PageLayout>
