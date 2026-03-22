@@ -346,6 +346,15 @@ function runGit(args, options = {}) {
   }).trim()
 }
 
+function runGitRaw(args, options = {}) {
+  return execFileSync("git", args, {
+    cwd: repoRoot,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    ...options,
+  }).replace(/\n+$/, "")
+}
+
 function safeGit(args) {
   const result = spawnSync("git", args, {
     cwd: repoRoot,
@@ -394,7 +403,7 @@ function relativeRepoPath(targetPath) {
 }
 
 function dirtyPaths() {
-  const raw = runGit(["status", "--porcelain", "--untracked-files=all"])
+  const raw = runGitRaw(["status", "--porcelain", "--untracked-files=all"])
   if (!raw) return []
 
   return raw.split("\n").map((line) => {

@@ -55,6 +55,14 @@ function runGit(args) {
   }).trim()
 }
 
+function runGitRaw(args) {
+  return execFileSync("git", args, {
+    cwd: repoRoot,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  }).replace(/\n+$/, "")
+}
+
 function parseDirtyPath(line) {
   if (!line) return ""
 
@@ -72,7 +80,7 @@ function parseDirtyPath(line) {
 
 function getRepoState() {
   const branch = runGit(["rev-parse", "--abbrev-ref", "HEAD"])
-  const dirty = runGit(["status", "--porcelain", "--untracked-files=all"])
+  const dirty = runGitRaw(["status", "--porcelain", "--untracked-files=all"])
   return {
     branch,
     dirty: Boolean(dirty),
