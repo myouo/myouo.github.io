@@ -75,7 +75,7 @@ async function renderMermaid(root: ParentNode) {
   }
 }
 
-async function enhanceRichText(root: ParentNode = document) {
+export async function enhanceRichText(root: ParentNode = document) {
   await Promise.all([renderMath(root), renderMermaid(root)])
 }
 

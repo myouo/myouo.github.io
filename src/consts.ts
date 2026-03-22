@@ -66,16 +66,10 @@ export const SOCIALS: Socials = [
     HREF: "https://github.com/myouo"
   },
   { 
-    NAME: "LinkedIn",
-    ICON: "linkedin",
-    TEXT: "markhorn-dev",
-    HREF: "https://www.linkedin.com/in/markhorn-dev/",
-  },
-  { 
     NAME: "Twitter",
     ICON: "twitter-x",
-    TEXT: "markhorn_dev",
-    HREF: "https://twitter.com/markhorn_dev",
+    TEXT: "myouo",
+    HREF: "https://twitter.com/myouomee",
   },
 ]
 

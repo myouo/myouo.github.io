@@ -5,6 +5,7 @@ import { execFileSync, spawnSync } from "node:child_process"
 import { URL } from "node:url"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { renderStudioPreview } from "./studio-preview-renderer.mjs"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -197,6 +198,16 @@ const server = http.createServer(async (request, response) => {
       const body = await readJsonBody(request)
       const data = runWorkflow(buildCliArgsFromCreate(body))
       sendJson(response, 201, { ok: true, data })
+      return
+    }
+
+    if (request.method === "POST" && url.pathname === "/preview") {
+      const body = await readJsonBody(request)
+      const data = await renderStudioPreview(String(body.body ?? ""), {
+        filePath: typeof body.filePath === "string" ? body.filePath : undefined,
+        frontmatter: body.frontmatter && typeof body.frontmatter === "object" ? body.frontmatter : undefined,
+      })
+      sendJson(response, 200, { ok: true, data })
       return
     }
 

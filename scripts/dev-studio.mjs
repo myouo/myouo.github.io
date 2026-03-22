@@ -13,6 +13,7 @@ const children = []
 const watchedScriptFiles = new Set([
   "content-studio-server.mjs",
   "content-workflow.mjs",
+  "studio-preview-renderer.mjs",
 ])
 
 function start(name, command, args, onExit) {

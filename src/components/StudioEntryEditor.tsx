@@ -1,4 +1,4 @@
-import { Show, createSignal, onMount } from "solid-js"
+import { Show, createEffect, createSignal, onCleanup, onMount } from "solid-js"
 
 type EntryStatus = "draft" | "published" | "archived"
 type EntryCollection = "blog" | "projects"
@@ -27,6 +27,10 @@ type ReviewResult = {
   branch: string
   base: string
   prUrl: string | null
+}
+
+type PreviewResult = {
+  html: string
 }
 
 type Props = {
@@ -65,6 +69,23 @@ async function request<T>(pathname: string, init?: RequestInit): Promise<T> {
   return payload.data as T
 }
 
+function clamp(value: number, min = 0, max = 1) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function getScrollRatio(node: HTMLElement) {
+  const scrollRange = node.scrollHeight - node.clientHeight
+  return scrollRange > 0 ? node.scrollTop / scrollRange : 0
+}
+
+function getCaretRatio(text: string, position: number) {
+  const normalized = text.replace(/\r\n/g, "\n")
+  const cursor = clamp(position, 0, normalized.length)
+  const currentLine = normalized.slice(0, cursor).split("\n").length - 1
+  const totalLines = Math.max(normalized.split("\n").length - 1, 1)
+  return clamp(currentLine / totalLines)
+}
+
 export default function StudioEntryEditor(props: Props) {
   const [entry, setEntry] = createSignal<StudioEntryDetail | null>(null)
   const [repoState, setRepoState] = createSignal<RepoState | null>(null)
@@ -74,6 +95,9 @@ export default function StudioEntryEditor(props: Props) {
   const [pushOnReview, setPushOnReview] = createSignal(false)
   const [message, setMessage] = createSignal("")
   const [error, setError] = createSignal("")
+  const [previewHtml, setPreviewHtml] = createSignal("")
+  const [previewLoading, setPreviewLoading] = createSignal(false)
+  const [previewError, setPreviewError] = createSignal("")
 
   const [title, setTitle] = createSignal("")
   const [summary, setSummary] = createSignal("")
@@ -82,6 +106,11 @@ export default function StudioEntryEditor(props: Props) {
   const [repoUrl, setRepoUrl] = createSignal("")
   const [demoUrl, setDemoUrl] = createSignal("")
   const [body, setBody] = createSignal("")
+
+  let bodyTextarea: HTMLTextAreaElement | undefined
+  let previewPanel: HTMLDivElement | undefined
+  let previewSyncFrame = 0
+  let previewSequence = 0
 
   function syncForm(detail: StudioEntryDetail) {
     setEntry(detail)
@@ -113,8 +142,96 @@ export default function StudioEntryEditor(props: Props) {
     }
   }
 
+  function schedulePreviewSync(centerOnCaret: boolean) {
+    if (!bodyTextarea || !previewPanel) return
+
+    if (previewSyncFrame) {
+      cancelAnimationFrame(previewSyncFrame)
+    }
+
+    previewSyncFrame = requestAnimationFrame(() => {
+      previewSyncFrame = 0
+
+      if (!bodyTextarea || !previewPanel) return
+
+      const caretRatio = getCaretRatio(body(), bodyTextarea.selectionStart ?? 0)
+      const scrollRatio = getScrollRatio(bodyTextarea)
+      const previewRange = Math.max(previewPanel.scrollHeight - previewPanel.clientHeight, 0)
+
+      if (centerOnCaret) {
+        const target = Math.max(0, caretRatio * previewPanel.scrollHeight - previewPanel.clientHeight * 0.35)
+        previewPanel.scrollTop = Math.min(target, previewRange)
+        return
+      }
+
+      previewPanel.scrollTop = previewRange * scrollRatio
+    })
+  }
+
+  async function enhancePreview() {
+    if (!previewPanel) return
+
+    const { enhanceRichText } = await import("@scripts/obsidian-rich-text")
+    await enhanceRichText(previewPanel)
+  }
+
   onMount(() => {
     void refresh()
+  })
+
+  onCleanup(() => {
+    if (previewSyncFrame) {
+      cancelAnimationFrame(previewSyncFrame)
+    }
+  })
+
+  createEffect(() => {
+    const currentBody = body()
+    const currentEntry = entry()
+    const frontmatter = {
+      title: title(),
+      summary: summary(),
+      date: date(),
+      tags: tags()
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+      repoUrl: props.collection === "projects" ? repoUrl() : undefined,
+      demoUrl: props.collection === "projects" ? demoUrl() : undefined,
+    }
+    const requestId = previewSequence + 1
+    previewSequence = requestId
+
+    setPreviewLoading(true)
+    setPreviewError("")
+
+    const timer = window.setTimeout(() => {
+      void request<PreviewResult>("/preview", {
+        method: "POST",
+        body: JSON.stringify({
+          body: currentBody,
+          filePath: currentEntry?.filePath,
+          frontmatter,
+        }),
+      }).then(async (preview) => {
+        if (requestId !== previewSequence) return
+
+        setPreviewHtml(preview.html)
+        await enhancePreview()
+        schedulePreviewSync(true)
+      }).catch((renderError) => {
+        if (requestId !== previewSequence) return
+        setPreviewError(renderError instanceof Error ? renderError.message : String(renderError))
+      }).finally(() => {
+        if (requestId === previewSequence) {
+          setPreviewLoading(false)
+        }
+      })
+    }, 180)
+
+    onCleanup(() => {
+      window.clearTimeout(timer)
+    })
   })
 
   async function saveEditor(event: SubmitEvent) {
@@ -254,47 +371,93 @@ export default function StudioEntryEditor(props: Props) {
                 </div>
               </div>
 
-              <form class="grid gap-4 lg:grid-cols-2" onSubmit={saveEditor}>
-                <label class="block lg:col-span-2">
-                  <div class="mb-2 text-sm font-semibold text-black dark:text-white">Title</div>
-                  <input class={inputClass} value={title()} onInput={(event) => setTitle(event.currentTarget.value)} />
-                </label>
+              <form class="space-y-6" onSubmit={saveEditor}>
+                <div class="grid gap-4 lg:grid-cols-2">
+                  <label class="block lg:col-span-2">
+                    <div class="mb-2 text-sm font-semibold text-black dark:text-white">Title</div>
+                    <input class={inputClass} value={title()} onInput={(event) => setTitle(event.currentTarget.value)} />
+                  </label>
 
-                <label class="block">
-                  <div class="mb-2 text-sm font-semibold text-black dark:text-white">Date</div>
-                  <input class={inputClass} value={date()} onInput={(event) => setDate(event.currentTarget.value)} placeholder="2026-03-22" />
-                </label>
+                  <label class="block">
+                    <div class="mb-2 text-sm font-semibold text-black dark:text-white">Date</div>
+                    <input class={inputClass} value={date()} onInput={(event) => setDate(event.currentTarget.value)} placeholder="2026-03-22" />
+                  </label>
 
-                <label class="block">
-                  <div class="mb-2 text-sm font-semibold text-black dark:text-white">Tags</div>
-                  <input class={inputClass} value={tags()} onInput={(event) => setTags(event.currentTarget.value)} placeholder="Python, Automation, Mahjong" />
-                </label>
+                  <label class="block">
+                    <div class="mb-2 text-sm font-semibold text-black dark:text-white">Tags</div>
+                    <input class={inputClass} value={tags()} onInput={(event) => setTags(event.currentTarget.value)} placeholder="Python, Automation, Mahjong" />
+                  </label>
 
-                <label class="block lg:col-span-2">
-                  <div class="mb-2 text-sm font-semibold text-black dark:text-white">Summary</div>
-                  <textarea class={textareaClass} value={summary()} onInput={(event) => setSummary(event.currentTarget.value)} />
-                </label>
+                  <label class="block lg:col-span-2">
+                    <div class="mb-2 text-sm font-semibold text-black dark:text-white">Summary</div>
+                    <textarea class={textareaClass} value={summary()} onInput={(event) => setSummary(event.currentTarget.value)} />
+                  </label>
 
-                <Show when={props.collection === "projects"}>
-                  <>
-                    <label class="block">
-                      <div class="mb-2 text-sm font-semibold text-black dark:text-white">Repository URL</div>
-                      <input class={inputClass} value={repoUrl()} onInput={(event) => setRepoUrl(event.currentTarget.value)} placeholder="https://github.com/myouo/project" />
-                    </label>
+                  <Show when={props.collection === "projects"}>
+                    <>
+                      <label class="block">
+                        <div class="mb-2 text-sm font-semibold text-black dark:text-white">Repository URL</div>
+                        <input class={inputClass} value={repoUrl()} onInput={(event) => setRepoUrl(event.currentTarget.value)} placeholder="https://github.com/myouo/project" />
+                      </label>
 
-                    <label class="block">
-                      <div class="mb-2 text-sm font-semibold text-black dark:text-white">Demo URL</div>
-                      <input class={inputClass} value={demoUrl()} onInput={(event) => setDemoUrl(event.currentTarget.value)} placeholder="https://example.com" />
-                    </label>
-                  </>
-                </Show>
+                      <label class="block">
+                        <div class="mb-2 text-sm font-semibold text-black dark:text-white">Demo URL</div>
+                        <input class={inputClass} value={demoUrl()} onInput={(event) => setDemoUrl(event.currentTarget.value)} placeholder="https://example.com" />
+                      </label>
+                    </>
+                  </Show>
+                </div>
 
-                <label class="block lg:col-span-2">
-                  <div class="mb-2 text-sm font-semibold text-black dark:text-white">Body</div>
-                  <textarea class={`${textareaClass} min-h-[26rem] font-mono text-sm leading-7`} value={body()} onInput={(event) => setBody(event.currentTarget.value)} />
-                </label>
+                <div class="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+                  <label class="block">
+                    <div class="mb-2 flex items-center justify-between gap-3">
+                      <span class="text-sm font-semibold text-black dark:text-white">Body</span>
+                      <span class="text-xs uppercase tracking-[0.18em] text-black/45 dark:text-white/40">
+                        Markdown / BBCode
+                      </span>
+                    </div>
+                    <textarea
+                      ref={bodyTextarea}
+                      class={`${textareaClass} h-[68vh] min-h-[34rem] resize-none font-mono text-sm leading-7`}
+                      value={body()}
+                      onInput={(event) => {
+                        setBody(event.currentTarget.value)
+                        schedulePreviewSync(true)
+                      }}
+                      onScroll={() => schedulePreviewSync(false)}
+                      onClick={() => schedulePreviewSync(true)}
+                      onKeyUp={() => schedulePreviewSync(true)}
+                      onSelect={() => schedulePreviewSync(true)}
+                      onFocus={() => schedulePreviewSync(true)}
+                    />
+                  </label>
 
-                <div class="lg:col-span-2 flex justify-end">
+                  <div class="block">
+                    <div class="mb-2 flex items-center justify-between gap-3">
+                      <span class="text-sm font-semibold text-black dark:text-white">Preview</span>
+                      <span class="text-xs uppercase tracking-[0.18em] text-black/45 dark:text-white/40">
+                        {previewLoading() ? "Rendering" : "Live"}
+                      </span>
+                    </div>
+                    <div
+                      ref={previewPanel}
+                      class="h-[68vh] min-h-[34rem] overflow-y-auto rounded-2xl border border-black/10 bg-black/[0.025] p-5 dark:border-white/20 dark:bg-white/[0.03]"
+                    >
+                      <Show when={!previewError()} fallback={
+                        <div class="rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-sm text-red-700 dark:text-red-300">
+                          {previewError()}
+                        </div>
+                      }>
+                        <article class="prose max-w-none prose-neutral dark:prose-invert" innerHTML={previewHtml() || "<p class=\"text-sm text-black/60 dark:text-white/60\">Nothing to preview yet.</p>"} />
+                      </Show>
+                    </div>
+                    <div class="mt-2 text-xs text-black/45 dark:text-white/40">
+                      Preview follows the editor caret and scroll position.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex justify-end">
                   <button type="submit" class={primaryButtonClass} disabled={saving() || reviewing()}>
                     {saving() ? "Saving..." : "Save Changes"}
                   </button>
