@@ -3,7 +3,7 @@ import type { Site, Page, Links, Socials } from "@types"
 // Global
 export const SITE: Site = {
   TITLE: "Myouo",
-  DESCRIPTION: "Portfolio and blog of Myouo, an AI Engineer building intelligent systems.",
+  DESCRIPTION: "Portfolio and blog of Myouo, a programming enthusiast who enjoys building small things and solving problems.",
   AUTHOR: "myouo",
 }
 
@@ -72,4 +72,3 @@ export const SOCIALS: Socials = [
     HREF: "https://twitter.com/myouomee",
   },
 ]
-

@@ -1,7 +1,7 @@
 ---
 company: "RocoArena"
 role: "开源贡献者 & 独立开发者"
-dateStart: "2023-01-01"
+dateStart: "2025-10"
 dateEnd: "Current"
 ---
 
